@@ -31,6 +31,24 @@ az network vnet subnet update --resource-group AdesewamultitierRG --vnet-name Ad
 az vm create --resource-group AdesewamultitierRG --name WebVM --image Ubuntu2204 --vnet-name AdesewamultitierVNet --subnet WebSubnet --admin-username azureuser --generate-ssh-keys
 az vm create --resource-group AdesewamultitierRG --name AppVM --image Ubuntu2204 --vnet-name AdesewamultitierVNet --subnet AppSubnet --admin-username azureuser --generate-ssh-keys --public-ip-address ""
 az vm create --resource-group AdesewamultitierRG --name DBVM --image Ubuntu2204 --vnet-name AdesewamultitierVNet --subnet DBSubnet --admin-username azureuser --generate-ssh-keys --public-ip-address ""
+# Get WebVM Public IP
+echo "Getting WebVM Public IP..."
+WEBVM_IP=$(az vm list-ip-addresses --resource-group "$RG" --name WebVM --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" --output tsv)
+echo "WebVM Public IP: $WEBVM_IP"
+
+# Copy SSH key to WebVM
+echo "Copying SSH key to WebVM..."
+scp ~/.ssh/id_rsa azureuser@$WEBVM_IP:~/.ssh/id_rsa
+
+# SSH into WebVM and test connectivity
+echo "Testing WebVM to AppVM connectivity..."
+ssh azureuser@$WEBVM_IP "chmod 600 ~/.ssh/id_rsa && ping -c 4 10.0.2.4"
+
+# Test AppVM to DBVM connectivity
+echo "Testing AppVM to DBVM connectivity..."
+ssh azureuser@$WEBVM_IP "ssh azureuser@10.0.2.4 'ping -c 4 10.0.3.4'"
+
+echo "All connectivity tests complete!"
 
 echo "Deployment Complete!"![IMG_3641](https://github.com/user-attachments/assets/bba8aa55-27a6-42cb-996d-c9cf4deae062)
 ![IMG_3640](https://github.com/user-attachments/assets/cf24f230-d26c-4b02-96d1-6c2ef47ef0d0)
